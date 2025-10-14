@@ -1,10 +1,10 @@
 import React from 'react';
 
 import { PuzzleProps } from 'drunkmode-puzzles';
-import { 
-  DragDropContext, 
-  Draggable, 
-  Droppable, 
+import {
+  DragDropContext,
+  Draggable,
+  Droppable,
 } from 'react-beautiful-dnd';
 import styled from 'styled-components';
 
@@ -42,7 +42,9 @@ const LetterBlock = styled.div<{ $isDragging?: boolean }>`
 function generateLetters(): { id: string; value: string }[] {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const randomIndex = Math.floor(Math.random() * 22);
-  const values = alphabet.slice(randomIndex, randomIndex+5).sort(() => 0.5 - Math.random());
+  const values = alphabet
+    .slice(randomIndex, randomIndex + 5)
+    .sort(() => 0.5 - Math.random());
 
   // ensure not alphabetical
   const sorted = [...values].sort();
@@ -50,51 +52,88 @@ function generateLetters(): { id: string; value: string }[] {
     return generateLetters();
   }
 
-  // stable ids based on value and index
   return values.map((v, i) => ({ id: `${v}-${i}`, value: v }));
 }
 
 export const Puzzle = (props: PuzzleProps) => {
-  const [letters, setLetters] = React.useState<{ id: string; value: string }[]>([]);
+  const [availableLetters, setAvailableLetters] = React.useState<{ id: string; value: string }[]>([]);
+  const [placedLetters, setPlacedLetters] = React.useState<( { id: string; value: string } | null)[]>([]);
   const [completed, setCompleted] = React.useState(false);
   const [isClient, setIsClient] = React.useState(false);
 
-  // detect client
   React.useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // initialize letters
   React.useEffect(() => {
+    let letters;
     if (props.data && !props.startFresh) {
       try {
         const saved = typeof props.data === 'string' ? JSON.parse(props.data) : props.data;
-        setLetters(saved);
+        letters = saved;
       } catch {
-        setLetters(generateLetters());
+        letters = generateLetters();
       }
     } else {
-      setLetters(generateLetters());
+      letters = generateLetters();
     }
+    setAvailableLetters(letters);
+    setPlacedLetters(Array(letters.length).fill(null));
   }, []);
 
   const handleOnDragEnd = (result: any) => {
-    if (!result.destination) {
+    const { source, destination } = result;
+    if (!destination) {
       return;
     }
-    const reordered = Array.from(letters);
-    const [moved] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, moved);
-    setLetters(reordered);
-    
-    props.onProgress?.(JSON.stringify(reordered.map((l) => l.value)));
-    
-    const correct = [...reordered.map((l) => l.value)].sort().reverse();
-    if (JSON.stringify(reordered.map((l) => l.value)) === JSON.stringify(correct)) {
-      if (!completed) {
-        setCompleted(true);
-        props.onSuccess?.();
+
+    // dragging from bottom to top
+    if (source.droppableId === 'bottom' && destination.droppableId === 'top') {
+      if (placedLetters[destination.index]) {
+        return;
+      } // slot taken
+
+      const movedLetter = availableLetters[source.index];
+      const newAvailable = Array.from(availableLetters);
+      newAvailable.splice(source.index, 1);
+      setAvailableLetters(newAvailable);
+
+      const newPlaced = Array.from(placedLetters);
+      newPlaced[destination.index] = movedLetter;
+      setPlacedLetters(newPlaced);
+    }
+
+    // dragging within bottom row
+    if (source.droppableId === 'bottom' && destination.droppableId === 'bottom') {
+      const newAvailable = Array.from(availableLetters);
+      const [moved] = newAvailable.splice(source.index, 1);
+      newAvailable.splice(destination.index, 0, moved);
+      setAvailableLetters(newAvailable);
+    }
+
+    // dragging back from top to bottom
+    if (source.droppableId === 'top' && destination.droppableId === 'bottom') {
+      const letter = placedLetters[source.index];
+      if (!letter) {
+        return;
       }
+
+      const newPlaced = Array.from(placedLetters);
+      newPlaced[source.index] = null;
+      setPlacedLetters(newPlaced);
+
+      const newAvailable = Array.from(availableLetters);
+      newAvailable.splice(destination.index, 0, letter);
+      setAvailableLetters(newAvailable);
+    }
+  };
+
+  const checkAnswer = () => {
+    const correct = [...placedLetters].map((l) => l?.value).sort().reverse();
+    const current = placedLetters.map((l) => l?.value);
+    if (JSON.stringify(current) === JSON.stringify(correct)) {
+      setCompleted(true);
+      props.onSuccess?.();
     } else {
       setCompleted(false);
       props.onMistake?.();
@@ -102,7 +141,9 @@ export const Puzzle = (props: PuzzleProps) => {
   };
 
   const resetGame = () => {
-    setLetters(generateLetters());
+    const letters = generateLetters();
+    setAvailableLetters(letters);
+    setPlacedLetters(Array(letters.length).fill(null));
     setCompleted(false);
   };
 
@@ -113,18 +154,45 @@ export const Puzzle = (props: PuzzleProps) => {
 
       {isClient && (
         <DragDropContext onDragEnd={ handleOnDragEnd }>
-          <Droppable droppableId="letters" direction="horizontal">
+          {/* Top row - empty slots */}
+          <Droppable droppableId="top" direction="horizontal">
             {(provided) => (
               <LetterList ref={ provided.innerRef } { ...provided.droppableProps }>
-                {letters.map((letterObj, index) => (
-                  <Draggable key={ letterObj.id } draggableId={ letterObj.id } index={ index }>
+                {placedLetters.map((letter, index) => (
+                  <Draggable
+                    key={ letter?.id || `empty-${index}` }
+                    draggableId={ letter?.id || `empty-${index}` }
+                    index={ index }
+                    isDragDisabled={ !letter }>
                     {(provided, snapshot) => (
                       <LetterBlock
                         ref={ provided.innerRef }
                         { ...provided.draggableProps }
                         { ...provided.dragHandleProps }
                         $isDragging={ snapshot.isDragging }>
-                        {letterObj.value}
+                        {letter?.value || ''}
+                      </LetterBlock>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </LetterList>
+            )}
+          </Droppable>
+
+          {/* Bottom row - available letters */}
+          <Droppable droppableId="bottom" direction="horizontal">
+            {(provided) => (
+              <LetterList ref={ provided.innerRef } { ...provided.droppableProps }>
+                {availableLetters.map((letter, index) => (
+                  <Draggable key={ letter.id } draggableId={ letter.id } index={ index }>
+                    {(provided, snapshot) => (
+                      <LetterBlock
+                        ref={ provided.innerRef }
+                        { ...provided.draggableProps }
+                        { ...provided.dragHandleProps }
+                        $isDragging={ snapshot.isDragging }>
+                        {letter.value}
                       </LetterBlock>
                     )}
                   </Draggable>
@@ -136,18 +204,18 @@ export const Puzzle = (props: PuzzleProps) => {
         </DragDropContext>
       )}
 
-      {completed ? (
-        <div style={ { color: 'green' } }>✅ Nice! You got it right!</div>
-      ) : (
-        <div style={ { color: '#888' } }>Drag to rearrange.</div>
-      )}
-
       <div style={ {
         display: 'flex', gap: '1rem', marginTop: '1rem', 
       } }>
         <button onClick={ resetGame }>New Letters</button>
+        <button onClick={ checkAnswer }>Check Answer</button>
       </div>
+
+      {completed ? (
+        <div style={ { color: 'green' } }>✅ Nice! You got it right!</div>
+      ) : (
+        <div style={ { color: '#888' } }>Drag all letters to the top row and click "Check Answer".</div>
+      )}
     </StyledContainer>
   );
 };
-
