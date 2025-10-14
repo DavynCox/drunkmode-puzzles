@@ -1,7 +1,12 @@
 import React from 'react';
+
 import { PuzzleProps } from 'drunkmode-puzzles';
+import { 
+  DragDropContext, 
+  Draggable, 
+  Droppable, 
+} from 'react-beautiful-dnd';
 import styled from 'styled-components';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 const StyledContainer = styled.div`
   display: flex;
@@ -74,7 +79,9 @@ export const Puzzle = (props: PuzzleProps) => {
   }, []);
 
   const handleOnDragEnd = (result: any) => {
-    if (!result.destination) return;
+    if (!result.destination) {
+      return;
+    }
     const reordered = Array.from(letters);
     const [moved] = reordered.splice(result.source.index, 1);
     reordered.splice(result.destination.index, 0, moved);
@@ -105,39 +112,40 @@ export const Puzzle = (props: PuzzleProps) => {
       <h3>Arrange the letters in reverse alphabetical order!</h3>
 
       {isClient && (
-        <DragDropContext onDragEnd={handleOnDragEnd}>
-        <Droppable droppableId="letters" direction="horizontal">
-          {(provided) => (
-            <LetterList ref={provided.innerRef} {...provided.droppableProps}>
-             {letters.map((letterObj, index) => (
-              <Draggable key={letterObj.id} draggableId={letterObj.id} index={index}>
-                {(provided, snapshot) => (
-                  <LetterBlock
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    $isDragging={snapshot.isDragging}
-                  >
-                    {letterObj.value}
-                  </LetterBlock>
-                )}
-              </Draggable>
-            ))}
-              {provided.placeholder}
-            </LetterList>
-          )}
-        </Droppable>
-      </DragDropContext>
+        <DragDropContext onDragEnd={ handleOnDragEnd }>
+          <Droppable droppableId="letters" direction="horizontal">
+            {(provided) => (
+              <LetterList ref={ provided.innerRef } { ...provided.droppableProps }>
+                {letters.map((letterObj, index) => (
+                  <Draggable key={ letterObj.id } draggableId={ letterObj.id } index={ index }>
+                    {(provided, snapshot) => (
+                      <LetterBlock
+                        ref={ provided.innerRef }
+                        { ...provided.draggableProps }
+                        { ...provided.dragHandleProps }
+                        $isDragging={ snapshot.isDragging }>
+                        {letterObj.value}
+                      </LetterBlock>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </LetterList>
+            )}
+          </Droppable>
+        </DragDropContext>
       )}
 
       {completed ? (
-        <div style={{ color: 'green' }}>✅ Nice! You got it right!</div>
+        <div style={ { color: 'green' } }>✅ Nice! You got it right!</div>
       ) : (
-        <div style={{ color: '#888' }}>Drag to rearrange.</div>
+        <div style={ { color: '#888' } }>Drag to rearrange.</div>
       )}
 
-      <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-        <button onClick={resetGame}>New Letters</button>
+      <div style={ {
+        display: 'flex', gap: '1rem', marginTop: '1rem', 
+      } }>
+        <button onClick={ resetGame }>New Letters</button>
       </div>
     </StyledContainer>
   );
