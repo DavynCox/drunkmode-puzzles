@@ -1,0 +1,9 @@
+{
+  "name": "com.example.alphabetbackwards.alphabet-backwards",
+  "version": "1.0.0",
+  "icon": "toy-brick",
+  "displayName": "Alphabaet Backwards",
+  "description": "Spell the alphabet backwards",
+  "author": "Davyn Cox",
+  "instructions": "Solve the puzzle to deactivate Drunk Mode"
+}

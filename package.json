@@ -65,6 +65,6 @@
     "typescript": "*"
   },
   "dependencies": {
-    "drunkmode-puzzles": "^0.1.13-c"
+    "drunkmode-puzzles": "^0.1.17-b"
   }
 }
