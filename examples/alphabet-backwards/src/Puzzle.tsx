@@ -88,7 +88,7 @@ export const Puzzle = (props: PuzzleProps) => {
     setPlacedLetters(Array(letters.length).fill(null));
   }, [props.data, props.startFresh]);
 
-  function handleDragFromBottom(source: DraggableLocation, destSlot: number) {
+  function handleSelect(source: DraggableLocation, destSlot: number) {
     const movedLetter = availableLetters[source.index];
     if (!movedLetter) {
       return;
@@ -111,7 +111,7 @@ export const Puzzle = (props: PuzzleProps) => {
     setPlacedLetters(newPlaced);
   }
 
-  function handleDragToBottom(destination: DraggableLocation, srcSlot: number) {
+  function handleDeselect(destination: DraggableLocation, srcSlot: number) {
     const letter = placedLetters[srcSlot];
     if (!letter) {
       return;
@@ -161,13 +161,13 @@ export const Puzzle = (props: PuzzleProps) => {
 
     // Selecting Letter
     if (source.droppableId === 'bottom' && destSlot !== null) {
-      handleDragFromBottom(source, destSlot);
+      handleSelect(source, destSlot);
       return;
     }
 
     // Deselecting letter
     if (srcSlot !== null && destination.droppableId === 'bottom') {
-      handleDragToBottom(destination, srcSlot);
+      handleDeselect(destination, srcSlot);
       return;
     }
 
