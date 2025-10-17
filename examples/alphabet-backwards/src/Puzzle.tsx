@@ -4,6 +4,7 @@ import { PuzzleProps } from 'drunkmode-puzzles';
 import {
   DragDropContext,
   Draggable,
+  DropResult,
   Droppable,
 } from 'react-beautiful-dnd';
 import styled from 'styled-components';
@@ -86,7 +87,7 @@ export const Puzzle = (props: PuzzleProps) => {
     setPlacedLetters(Array(letters.length).fill(null));
   }, [props.data, props.startFresh]);
 
-  const handleOnDragEnd = (result: any) => {
+  const handleOnDragEnd = (result: DropResult) => {
     const { source, destination } = result;
     if (!destination) {
       return;
