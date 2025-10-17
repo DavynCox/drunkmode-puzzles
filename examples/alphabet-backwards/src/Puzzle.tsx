@@ -87,43 +87,46 @@ export const Puzzle = (props: PuzzleProps) => {
       return;
     }
 
-    // dragging from bottom to top
-    if (source.droppableId === 'bottom' && destination.droppableId === 'top') {
-      if (placedLetters[destination.index]) {
-        return;
-      } // slot taken
+    const destSlot = destination.droppableId.startsWith('slot-')
+      ? parseInt(destination.droppableId.split('-')[1], 10)
+      : null;
 
+    // From bottom to slot
+    if (source.droppableId === 'bottom' && destSlot !== null) {
+      if (placedLetters[destSlot]) {
+        return;
+      } // slot occupied
       const movedLetter = availableLetters[source.index];
       const newAvailable = Array.from(availableLetters);
       newAvailable.splice(source.index, 1);
-      setAvailableLetters(newAvailable);
-
       const newPlaced = Array.from(placedLetters);
-      newPlaced[destination.index] = movedLetter;
+      newPlaced[destSlot] = movedLetter;
+      setAvailableLetters(newAvailable);
       setPlacedLetters(newPlaced);
+      return;
     }
 
-    // dragging within bottom row
+    // From slot back to bottom
+    if (source.droppableId.startsWith('slot-') && destination.droppableId === 'bottom') {
+      const srcSlot = parseInt(source.droppableId.split('-')[1], 10);
+      const letter = placedLetters[srcSlot];
+      if (!letter) {
+        return;
+      }
+      const newPlaced = Array.from(placedLetters);
+      newPlaced[srcSlot] = null;
+      const newAvailable = Array.from(availableLetters);
+      newAvailable.splice(destination.index, 0, letter);
+      setAvailableLetters(newAvailable);
+      setPlacedLetters(newPlaced);
+      return;
+    }
+
+    // Reordering in bottom row
     if (source.droppableId === 'bottom' && destination.droppableId === 'bottom') {
       const newAvailable = Array.from(availableLetters);
       const [moved] = newAvailable.splice(source.index, 1);
       newAvailable.splice(destination.index, 0, moved);
-      setAvailableLetters(newAvailable);
-    }
-
-    // dragging back from top to bottom
-    if (source.droppableId === 'top' && destination.droppableId === 'bottom') {
-      const letter = placedLetters[source.index];
-      if (!letter) {
-        return;
-      }
-
-      const newPlaced = Array.from(placedLetters);
-      newPlaced[source.index] = null;
-      setPlacedLetters(newPlaced);
-
-      const newAvailable = Array.from(availableLetters);
-      newAvailable.splice(destination.index, 0, letter);
       setAvailableLetters(newAvailable);
     }
   };
@@ -155,30 +158,44 @@ export const Puzzle = (props: PuzzleProps) => {
       {isClient && (
         <DragDropContext onDragEnd={ handleOnDragEnd }>
           {/* Top row - empty slots */}
-          <Droppable droppableId="top" direction="horizontal">
-            {(provided) => (
-              <LetterList ref={ provided.innerRef } { ...provided.droppableProps }>
-                {placedLetters.map((letter, index) => (
-                  <Draggable
-                    key={ letter?.id || `empty-${index}` }
-                    draggableId={ letter?.id || `empty-${index}` }
-                    index={ index }
-                    isDragDisabled={ !letter }>
-                    {(provided, snapshot) => (
-                      <LetterBlock
-                        ref={ provided.innerRef }
-                        { ...provided.draggableProps }
-                        { ...provided.dragHandleProps }
-                        $isDragging={ snapshot.isDragging }>
-                        {letter?.value || ''}
-                      </LetterBlock>
+          <div style={ {
+            display: 'flex', gap: '10px', justifyContent: 'center', 
+          } }>
+            {placedLetters.map((letter, index) => (
+              <Droppable droppableId={ `slot-${index}` } key={ `slot-${index}` }>
+                {(provided, snapshot) => (
+                  <div
+                    ref={ provided.innerRef }
+                    { ...provided.droppableProps }
+                    style={ {
+                      alignItems: 'center',
+                      backgroundColor: snapshot.isDraggingOver ? '#e6f2ff' : '#fafafa',
+                      border: '2px dashed #999',
+                      borderRadius: 8,
+                      display: 'flex',
+                      height: 60,
+                      justifyContent: 'center',
+                      width: 60,
+                    } }>
+                    {letter && (
+                      <Draggable draggableId={ letter.id } index={ 0 }>
+                        {(provided, snapshot) => (
+                          <LetterBlock
+                            ref={ provided.innerRef }
+                            { ...provided.draggableProps }
+                            { ...provided.dragHandleProps }
+                            $isDragging={ snapshot.isDragging }>
+                            {letter.value}
+                          </LetterBlock>
+                        )}
+                      </Draggable>
                     )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </LetterList>
-            )}
-          </Droppable>
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            ))}
+          </div>
 
           {/* Bottom row - available letters */}
           <Droppable droppableId="bottom" direction="horizontal">
