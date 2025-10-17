@@ -39,7 +39,12 @@ const LetterBlock = styled.div<{ $isDragging?: boolean }>`
   box-shadow: ${(p) => (p.$isDragging ? '0 0 6px rgba(0,0,0,0.2)' : 'none')};
 `;
 
-function generateLetters(): { id: string; value: string }[] {
+interface Letter {
+  id: string;
+  value: string;
+}
+
+function generateLetters(): Letter[] {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const randomIndex = Math.floor(Math.random() * 22);
   const sortedLetters = alphabet
@@ -54,8 +59,8 @@ function generateLetters(): { id: string; value: string }[] {
 }
 
 export const Puzzle = (props: PuzzleProps) => {
-  const [availableLetters, setAvailableLetters] = React.useState<{ id: string; value: string }[]>([]);
-  const [placedLetters, setPlacedLetters] = React.useState<( { id: string; value: string } | null)[]>([]);
+  const [availableLetters, setAvailableLetters] = React.useState<Letter[]>([]);
+  const [placedLetters, setPlacedLetters] = React.useState<( Letter | null)[]>([]);
   const [completed, setCompleted] = React.useState(false);
   const [isClient, setIsClient] = React.useState(false);
 
@@ -64,7 +69,7 @@ export const Puzzle = (props: PuzzleProps) => {
   }, []);
 
   React.useEffect(() => {
-    let letters;
+    let letters: Letter[];
     if (props.data && !props.startFresh) {
       try {
         const saved = typeof props.data === 'string' ? JSON.parse(props.data) : props.data;
@@ -76,6 +81,8 @@ export const Puzzle = (props: PuzzleProps) => {
       letters = generateLetters();
     }
     setAvailableLetters(letters);
+    // Not sure if I'm properly saving the placed letters here...
+    // Circle back to this
     setPlacedLetters(Array(letters.length).fill(null));
   }, [props.data, props.startFresh]);
 
