@@ -44,7 +44,7 @@ function generateLetters(): { id: string; value: string }[] {
   const randomIndex = Math.floor(Math.random() * 22);
   const sortedLetters = alphabet
     .slice(randomIndex, randomIndex + 5);
-  const randomizedLetters = sortedLetters.sort(() => 0.5 - Math.random());
+  const randomizedLetters = [...sortedLetters].sort(() => 0.5 - Math.random());
 
   if (randomizedLetters.join('') === sortedLetters.join('')) {
     return generateLetters();
@@ -77,7 +77,7 @@ export const Puzzle = (props: PuzzleProps) => {
     }
     setAvailableLetters(letters);
     setPlacedLetters(Array(letters.length).fill(null));
-  }, []);
+  }, [props.data, props.startFresh]);
 
   const handleOnDragEnd = (result: any) => {
     const { source, destination } = result;
