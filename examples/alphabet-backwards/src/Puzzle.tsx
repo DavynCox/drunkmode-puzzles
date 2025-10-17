@@ -278,7 +278,7 @@ export const Puzzle = (props: PuzzleProps) => {
         display: 'flex', gap: '1rem', marginTop: '1rem', 
       } }>
         <button onClick={ resetGame }>New Letters</button>
-        <button onClick={ checkAnswer }>Check Answer</button>
+        <button onClick={ checkAnswer } disabled={ Boolean(availableLetters.length) }>Check Answer</button>
       </div>
 
       {completed ? (
