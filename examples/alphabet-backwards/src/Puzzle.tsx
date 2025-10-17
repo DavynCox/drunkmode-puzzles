@@ -266,7 +266,7 @@ export const Puzzle = (props: PuzzleProps) => {
       {completed ? (
         <div style={ { color: 'green' } }>✅ Nice! You got it right!</div>
       ) : (
-        <div style={ { color: '#888' } }>Drag all letters to the top row and click "Check Answer".</div>
+        <div style={ { color: '#888' } }>{'Drag all letters to the top row and click "Check Answer".'}</div>
       )}
     </StyledContainer>
   );
