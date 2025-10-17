@@ -42,17 +42,15 @@ const LetterBlock = styled.div<{ $isDragging?: boolean }>`
 function generateLetters(): { id: string; value: string }[] {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const randomIndex = Math.floor(Math.random() * 22);
-  const values = alphabet
-    .slice(randomIndex, randomIndex + 5)
-    .sort(() => 0.5 - Math.random());
+  const sortedLetters = alphabet
+    .slice(randomIndex, randomIndex + 5);
+  const randomizedLetters = sortedLetters.sort(() => 0.5 - Math.random());
 
-  // ensure not alphabetical
-  const sorted = [...values].sort();
-  if (values.join('') === sorted.join('')) {
+  if (randomizedLetters.join('') === sortedLetters.join('')) {
     return generateLetters();
   }
 
-  return values.map((v, i) => ({ id: `${v}-${i}`, value: v }));
+  return randomizedLetters.map((v, i) => ({ id: `${v}-${i}`, value: v }));
 }
 
 export const Puzzle = (props: PuzzleProps) => {
