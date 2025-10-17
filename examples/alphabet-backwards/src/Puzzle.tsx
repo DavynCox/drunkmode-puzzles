@@ -4,6 +4,7 @@ import { PuzzleProps } from 'drunkmode-puzzles';
 import {
   DragDropContext,
   Draggable,
+  DraggableLocation,
   DropResult,
   Droppable,
 } from 'react-beautiful-dnd';
@@ -87,7 +88,65 @@ export const Puzzle = (props: PuzzleProps) => {
     setPlacedLetters(Array(letters.length).fill(null));
   }, [props.data, props.startFresh]);
 
-  const handleOnDragEnd = (result: DropResult) => {
+  function handleDragFromBottom(source: DraggableLocation, destSlot: number) {
+    const movedLetter = availableLetters[source.index];
+    if (!movedLetter) {
+      return;
+    }
+
+    const newAvailable = Array.from(availableLetters);
+    newAvailable.splice(source.index, 1);
+
+    const newPlaced = Array.from(placedLetters);
+    // if destination slot occupied, swap
+    if (newPlaced[destSlot]) {
+      const displaced = newPlaced[destSlot];
+      newPlaced[destSlot] = movedLetter;
+      newAvailable.push(displaced);
+    } else {
+      newPlaced[destSlot] = movedLetter;
+    }
+
+    setAvailableLetters(newAvailable);
+    setPlacedLetters(newPlaced);
+  }
+
+  function handleDragToBottom(destination: DraggableLocation, srcSlot: number) {
+    const letter = placedLetters[srcSlot];
+    if (!letter) {
+      return;
+    }
+
+    const newPlaced = Array.from(placedLetters);
+    newPlaced[srcSlot] = null;
+
+    const newAvailable = Array.from(availableLetters);
+    newAvailable.splice(destination.index, 0, letter);
+
+    setAvailableLetters(newAvailable);
+    setPlacedLetters(newPlaced);
+  }
+
+  function handleChangeSlot(srcSlot: number, destSlot: number) {
+    const newPlaced = Array.from(placedLetters);
+    const moved = newPlaced[srcSlot];
+    const target = newPlaced[destSlot];
+
+    // swap or move into empty slot
+    newPlaced[destSlot] = moved;
+    newPlaced[srcSlot] = target || null;
+
+    setPlacedLetters(newPlaced);
+  }
+
+  function handleReorder(source: DraggableLocation, destination: DraggableLocation) {
+    const newAvailable = Array.from(availableLetters);
+    const [moved] = newAvailable.splice(source.index, 1);
+    newAvailable.splice(destination.index, 0, moved);
+    setAvailableLetters(newAvailable);
+  }
+
+  function handleOnDragEnd(result: DropResult) {
     const { source, destination } = result;
     if (!destination) {
       return;
@@ -100,73 +159,32 @@ export const Puzzle = (props: PuzzleProps) => {
       ? parseInt(destination.droppableId.split('-')[1], 10)
       : null;
 
-    // --- From bottom → slot ---
+    // Selecting Letter
     if (source.droppableId === 'bottom' && destSlot !== null) {
-      const movedLetter = availableLetters[source.index];
-      if (!movedLetter) {
-        return;
-      }
-
-      const newAvailable = Array.from(availableLetters);
-      newAvailable.splice(source.index, 1);
-
-      const newPlaced = Array.from(placedLetters);
-      // if destination slot occupied, swap
-      if (newPlaced[destSlot]) {
-        const displaced = newPlaced[destSlot];
-        newPlaced[destSlot] = movedLetter;
-        newAvailable.push(displaced);
-      } else {
-        newPlaced[destSlot] = movedLetter;
-      }
-
-      setAvailableLetters(newAvailable);
-      setPlacedLetters(newPlaced);
+      handleDragFromBottom(source, destSlot);
       return;
     }
 
-    // --- From slot → bottom ---
+    // Deselecting letter
     if (srcSlot !== null && destination.droppableId === 'bottom') {
-      const letter = placedLetters[srcSlot];
-      if (!letter) {
-        return;
-      }
-
-      const newPlaced = Array.from(placedLetters);
-      newPlaced[srcSlot] = null;
-
-      const newAvailable = Array.from(availableLetters);
-      newAvailable.splice(destination.index, 0, letter);
-
-      setAvailableLetters(newAvailable);
-      setPlacedLetters(newPlaced);
+      handleDragToBottom(destination, srcSlot);
       return;
     }
 
-    // --- From slot → another slot ---
+    // Changing slots
     if (srcSlot !== null && destSlot !== null && srcSlot !== destSlot) {
-      const newPlaced = Array.from(placedLetters);
-      const moved = newPlaced[srcSlot];
-      const target = newPlaced[destSlot];
-
-      // swap or move into empty slot
-      newPlaced[destSlot] = moved;
-      newPlaced[srcSlot] = target || null;
-
-      setPlacedLetters(newPlaced);
+      handleChangeSlot(srcSlot, destSlot);
       return;
     }
 
-    // --- Reordering bottom row ---
+    // Reordering bottom row
     if (source.droppableId === 'bottom' && destination.droppableId === 'bottom') {
-      const newAvailable = Array.from(availableLetters);
-      const [moved] = newAvailable.splice(source.index, 1);
-      newAvailable.splice(destination.index, 0, moved);
-      setAvailableLetters(newAvailable);
+      handleReorder(source, destination);
+      return;
     }
-  };
+  }
 
-  const checkAnswer = () => {
+  function checkAnswer() {
     const correct = [...placedLetters].map((l) => l?.value).sort().reverse();
     const current = placedLetters.map((l) => l?.value);
     if (JSON.stringify(current) === JSON.stringify(correct)) {
@@ -176,14 +194,14 @@ export const Puzzle = (props: PuzzleProps) => {
       setCompleted(false);
       props.onMistake?.();
     }
-  };
+  }
 
-  const resetGame = () => {
+  function resetGame() {
     const letters = generateLetters();
     setAvailableLetters(letters);
     setPlacedLetters(Array(letters.length).fill(null));
     setCompleted(false);
-  };
+  }
 
   return (
     <StyledContainer>
