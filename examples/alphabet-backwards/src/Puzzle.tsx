@@ -87,42 +87,71 @@ export const Puzzle = (props: PuzzleProps) => {
       return;
     }
 
+    const srcSlot = source.droppableId.startsWith('slot-')
+      ? parseInt(source.droppableId.split('-')[1], 10)
+      : null;
     const destSlot = destination.droppableId.startsWith('slot-')
       ? parseInt(destination.droppableId.split('-')[1], 10)
       : null;
 
-    // From bottom to slot
+    // --- From bottom → slot ---
     if (source.droppableId === 'bottom' && destSlot !== null) {
-      if (placedLetters[destSlot]) {
-        return;
-      } // slot occupied
       const movedLetter = availableLetters[source.index];
+      if (!movedLetter) {
+        return;
+      }
+
       const newAvailable = Array.from(availableLetters);
       newAvailable.splice(source.index, 1);
+
       const newPlaced = Array.from(placedLetters);
-      newPlaced[destSlot] = movedLetter;
+      // if destination slot occupied, swap
+      if (newPlaced[destSlot]) {
+        const displaced = newPlaced[destSlot];
+        newPlaced[destSlot] = movedLetter;
+        newAvailable.push(displaced);
+      } else {
+        newPlaced[destSlot] = movedLetter;
+      }
+
       setAvailableLetters(newAvailable);
       setPlacedLetters(newPlaced);
       return;
     }
 
-    // From slot back to bottom
-    if (source.droppableId.startsWith('slot-') && destination.droppableId === 'bottom') {
-      const srcSlot = parseInt(source.droppableId.split('-')[1], 10);
+    // --- From slot → bottom ---
+    if (srcSlot !== null && destination.droppableId === 'bottom') {
       const letter = placedLetters[srcSlot];
       if (!letter) {
         return;
       }
+
       const newPlaced = Array.from(placedLetters);
       newPlaced[srcSlot] = null;
+
       const newAvailable = Array.from(availableLetters);
       newAvailable.splice(destination.index, 0, letter);
+
       setAvailableLetters(newAvailable);
       setPlacedLetters(newPlaced);
       return;
     }
 
-    // Reordering in bottom row
+    // --- From slot → another slot ---
+    if (srcSlot !== null && destSlot !== null && srcSlot !== destSlot) {
+      const newPlaced = Array.from(placedLetters);
+      const moved = newPlaced[srcSlot];
+      const target = newPlaced[destSlot];
+
+      // swap or move into empty slot
+      newPlaced[destSlot] = moved;
+      newPlaced[srcSlot] = target || null;
+
+      setPlacedLetters(newPlaced);
+      return;
+    }
+
+    // --- Reordering bottom row ---
     if (source.droppableId === 'bottom' && destination.droppableId === 'bottom') {
       const newAvailable = Array.from(availableLetters);
       const [moved] = newAvailable.splice(source.index, 1);
