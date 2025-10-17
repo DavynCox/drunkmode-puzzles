@@ -231,7 +231,7 @@ export const Puzzle = (props: PuzzleProps) => {
                       width: 60,
                     } }>
                     {letter && (
-                      <Draggable draggableId={ letter.id } index={ 0 }>
+                      <Draggable key={ letter.id } draggableId={ letter.id } index={ 0 }>
                         {(provided, snapshot) => (
                           <LetterBlock
                             ref={ provided.innerRef }
